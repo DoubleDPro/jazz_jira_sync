@@ -25,6 +25,8 @@ while True:
         JiraApiProcessor().process_issues_from_jazz()
     elif input_command == 'c':
         JiraApiProcessor().process_comments_from_jazz()
+    elif input_command == 't':
+        JiraApiProcessor().process_tags_from_changelog()
     print('Команда "{}" выполнена успешно'.format(available_commands_with_descr.get(input_command)))
 
     is_continue = input("Продолжить?(y/n)")

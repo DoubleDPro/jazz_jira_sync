@@ -1,6 +1,7 @@
 from jira import JIRA
 from time import sleep
 from JazzCsvProcessor import JazzCsvProcessor
+from ChangelogProcessor import ChangelogProcessor
 from params import jira_server_host
 import getpass
 
@@ -74,3 +75,38 @@ class JiraApiProcessor:
             new_issue = jira.create_issue(fields=issue)
             print('Для дефекта {} из RTC в JIRA создан дефект {}'.format(issue.get('summary'), new_issue.key))
         print('Обработка дефектов, выгруженных из Jazz прошла успешно')
+
+    def process_tags_from_changelog(self):
+        print('Обработка changelog-ов для выставления меток в задачах Jira')
+        jira = JIRA(self.options, basic_auth=(self.jira_user_login, self.jira_user_password))
+        changelog_processor = ChangelogProcessor()
+        new_issues = changelog_processor.get_list_of_issues_from_changelog('New_Issues')
+        all_issues = changelog_processor.get_list_of_issues_from_changelog('All_Issues')
+        for release in new_issues:
+            for issue in new_issues.get(release):
+                issue_query = ''
+                if 'jazz' in issue:
+                    issue_query = 'PROJECT = ARSPSBR AND STATUS != "Отменен (Canceled)" AND SUMMARY ~ {}'.format('"RTC JAZZ ' + issue[4:] + '%"')
+                elif 'ARSPSBR' in issue:
+                    issue_query = 'PROJECT = ARSPSBR AND STATUS != "Отменен (Canceled)" AND "Partner Issue Key" ~ {}'.format('"' + issue + '"')
+                jira_issue_json = jira.search_issues(issue_query, maxResults=1, json_result=True)
+                jira_issue = jira.issue(jira_issue_json.get('issues')[0].get('key'))
+                current_labels = jira_issue_json.get('issues')[0].get('fields').get('labels')
+                new_label = 'new@' + release
+                current_labels.append(new_label)
+                jira_issue.update(fields={"labels": current_labels})
+                print('Метка ' + new_label + ' успешно добавлена в задачу ' + jira_issue)
+        for release in all_issues:
+            for issue in all_issues.get(release):
+                issue_query = ''
+                if 'jazz' in issue:
+                    issue_query = 'PROJECT = ARSPSBR AND STATUS != "Отменен (Canceled)" AND SUMMARY ~ {}'.format('"RTC JAZZ ' + issue[9:] + '%"')
+                elif 'ARSPSBR' in issue:
+                    issue_query = 'PROJECT = ARSPSBR AND STATUS != "Отменен (Canceled)" AND "Partner Issue Key" ~ {}'.format('"' + issue + '"')
+                jira_issue_json = jira.search_issues(issue_query, maxResults=1, json_result=True)
+                jira_issue = jira.issue(jira_issue_json.get('issues')[0].get('key'))
+                current_labels = jira_issue_json.get('issues')[0].get('fields').get('labels')
+                new_label = 'all@' + release
+                current_labels.append(new_label)
+                jira_issue.update(fields={"labels": current_labels})
+                print('Метка ' + new_label + ' успешно добавлена в задачу ' + jira_issue)
