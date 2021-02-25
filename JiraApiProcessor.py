@@ -81,7 +81,7 @@ class JiraApiProcessor:
         jira = JIRA(self.options, basic_auth=(self.jira_user_login, self.jira_user_password))
         changelog_processor = ChangelogProcessor()
         new_issues = changelog_processor.get_list_of_issues_from_changelog('New_Issues')
-        all_issues = changelog_processor.get_list_of_issues_from_changelog('All_Issues')
+        print('Простановка меток new@...')
         for release in new_issues:
             for issue in new_issues.get(release):
                 issue_query = ''
@@ -95,11 +95,13 @@ class JiraApiProcessor:
                 new_label = 'new@' + release
                 current_labels.append(new_label)
                 jira_issue.update(fields={"labels": current_labels})
-                print('Метка ' + new_label + ' успешно добавлена в задачу ' + jira_issue)
+                print('Метка ' + new_label + ' успешно добавлена в задачу ' + str(jira_issue))
+        all_issues = changelog_processor.get_list_of_issues_from_changelog('All_Issues')
+        print('Простановка меток all@...')
         for release in all_issues:
             for issue in all_issues.get(release):
                 issue_query = ''
-                if 'jazz' in issue:
+                if 'JAZZ' in issue:
                     issue_query = 'PROJECT = ARSPSBR AND STATUS != "Отменен (Canceled)" AND SUMMARY ~ {}'.format('"RTC JAZZ ' + issue[9:] + '%"')
                 elif 'ARSPSBR' in issue:
                     issue_query = 'PROJECT = ARSPSBR AND STATUS != "Отменен (Canceled)" AND "Partner Issue Key" ~ {}'.format('"' + issue + '"')
@@ -109,4 +111,4 @@ class JiraApiProcessor:
                 new_label = 'all@' + release
                 current_labels.append(new_label)
                 jira_issue.update(fields={"labels": current_labels})
-                print('Метка ' + new_label + ' успешно добавлена в задачу ' + jira_issue)
+                print('Метка ' + new_label + ' успешно добавлена в задачу ' + str(jira_issue))
